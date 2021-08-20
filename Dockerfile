@@ -17,9 +17,9 @@ RUN yum install -y epel-release wget gcc
 RUN yum group install -y "Development Tools"
 RUN yum install -y python-devel python-setuptools python-pip
 RUN yum install -y automake
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip==18.0
 RUN pip install virtualenv==16.7.10 
-RUN pip install pygments
+RUN pip install pygments==2.4.0
 
 # copy Basic Browser source code
 COPY basic.tar.gz scripts/basic_setup.sh /tmp/
@@ -53,7 +53,7 @@ RUN wget -q http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
 RUN rpm -ivh mysql-community-release-el7-5.noarch.rpm
 RUN yum -y update
 RUN yum -y install mysql-server mysql-devel
-RUN pip install mysql-python
+RUN pip install mysql
 ADD confs/bind_0.cnf /etc/mysql/conf.d/bind_0.cnf
 
 # create mysql database
@@ -79,10 +79,15 @@ RUN /usr/bin/python2.7 setup.py $BASIC_DIR/extsds-bin \
 RUN $BASIC_DIR/_py/bin/python -m pip uninstall -y pymongo
 RUN $BASIC_DIR/_py/bin/python -m pip install pymongo==2.3
 
+# Downgrade pygments to version 2.3
+RUN $BASIC_DIR/_py/bin/python -m pip uninstall -y pygments
+RUN $BASIC_DIR/_py/bin/python -m pip install pygments==2.4.0
+
 # install mongodb
 ADD confs/mongodb-org.repo /etc/yum.repos.d/mongodb-org.repo
 RUN yum -y install mongodb-org
 VOLUME ["/data/db"]
+RUN mkdir -p /data/db
 COPY scripts/syncdb.sh /scripts/syncdb.sh
 RUN chmod +x /scripts/syncdb.sh && sh /scripts/syncdb.sh
 
@@ -114,5 +119,8 @@ RUN yum clean all && \
 
 
 EXPOSE 8000/tcp
+
+COPY config_file.sh config_file.sh
+COPY upload_to_basic.sh upload_to_basic.sh
 
 ENTRYPOINT ["/scripts/run.sh"]
